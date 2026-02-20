@@ -12,220 +12,182 @@ export const LEVEL_SYSTEM = [
 export const XP_PER_LESSON = 50;
 
 export const TOP_MODELS = [
-  "ChatGPT (GPT-5.2)",
-  "Claude (Opus 4.5)",
-  "Gemini 3 Pro",
-  "Perplexity Pro",
+  "ChatGPT",
+  "Claude",
+  "Gemini",
+  "DeepSeek",
+  "Perplexity",
+  "Sora",
+  "Midjourney",
   "Cursor",
-  "GitHub Copilot",
-  "Notion AI",
-  "Zapier AI",
-  "Midjourney v6",
-  "Microsoft Copilot"
+  "Llama",
+  "Suno"
 ];
 
 export const AGENT_PROMPTS = {
   DISCOVERY: (currentDate: string) => `
-    Act as the "Update Discovery Agent". Your goal is to find the latest, real-world AI changes.
-    
+    Act as the "Update Discovery Agent". 
     Current Date: ${currentDate}
     
-    Use Google Search to find 5-6 significant AI updates from the **last 7 days ONLY**.
+    Goal: Find 8 granular, breaking AI news items from the **last 24-48 hours**.
     
-    STRICT TIME CONSTRAINT:
-    - Do NOT include any news older than 7 days from ${currentDate}.
-    - Prioritize updates from the last 24 hours.
-    
-    SEARCH TARGETS:
-    - DeepSeek (R1 updates), Google (Gemini 2.5/3, Veo), OpenAI (o3, Sora, Operator), Anthropic (Claude 3.7/Opus), xAI (Grok 3).
-    - Coding Agents: Cursor, Windsurf, Bolt.new, Lovable.
-    - Image/Video: Midjourney v6.1/v7, Runway Gen-3, Luma Ray 2, Sora.
+    CRITERIA:
+    - MUST be from the last 48 hours.
+    - Focus on: Minor version updates, pricing changes, new features, and ecosystem news (e.g. "OpenAI drops prices", "DeepSeek adds API").
+    - Style: "Live Feed" / Ticker style.
     
     Return a JSON array wrapped in markdown code blocks.
     Structure:
     [
       {
         "id": "string",
-        "rawContent": "string (detailed technical description)",
-        "sourceId": "string (Source Name)",
+        "rawContent": "string (specific detail)",
+        "sourceId": "string",
         "url": "string",
         "detectedAt": "string (ISO date)"
       }
     ]
   `,
-  
+
   RELEVANCE: (userJson: string) => `
-    Act as the "Relevance & Classification Agent". 
-    
+    Act as the "Personal Curation Agent". 
     Input User Profile: ${userJson}
     
-    For each provided update signal, analyze it against the user profile.
-    Return a JSON array of "VerifiedUpdate" objects:
-    - id: string (match input)
-    - title: string (Editorial style, short, punchy)
-    - shortSummary: string (Max 120 chars, extremely concise)
-    - updateType: "New Capability" | "Limit Change" | "Workflow Shift" | "Fix / Deprecation"
-    - difficultyLevel: number (1-5, based on technical complexity)
-    - relevanceScore: number (0-100, how much this user cares)
-    - lessonEligible: boolean (true if it introduces a new feature one can learn)
-    - source: string (from input sourceId)
-    - url: string (from input url)
-    - date: string
+    Task: Format these updates for a clean, mobile feed.
     
-    Sort by relevanceScore descending. Output valid JSON only.
+    CRITICAL INSTRUCTIONS:
+    - TITLE RULE: Use the BRAND NAME ONLY, no version numbers.
+    - SCORE STRICTLY:
+      * 90-100: ESSENTIAL for a ${JSON.parse(userJson).role}. (e.g. Coding tools for Devs, Design tools for Creatives).
+      * 70-89: Important Industry News (e.g. "OpenAI drops price", "Gemini 2.0").
+      * 50-69: General Awareness.
+      * STRICTLY DOWN-RANK: If news is for Devs (APIs, Python, Models) and user is NOT technical -> Max Score 65.
+      * < 50: REJECT.
+    - Rewrite titles to be short and punchy.
+    
+    Return verified JSON array of "VerifiedUpdate".
   `,
 
   LESSON_GENERATION: (updateJson: string, userJson: string) => `
-    Act as the "Microlesson Generation Agent".
+    Act as a "Friendly Mentor".
+    Update: ${updateJson}
+    User: ${userJson}
     
-    Update Context: ${updateJson}
-    User Context: ${userJson}
+    Generate a micro-lesson that is **Not Scary** and **Immediately Useful**.
     
-    Generate a high-quality, specialized micro-lesson.
+    TONE GUIDE:
+    - Use simple, plain English. No jargon.
+    - Be encouraging. "You can do this."
+    - Focus on the 'Magic Moment' - the specific cool thing they can do.
     
-    IMPORTANT: Provide a "visualConcept". This is a prompt used to generate a 3D abstract header image for the lesson.
-    The concept should be abstract, futuristic, and metaphorically related to the update.
-    Example: "A golden key forming from digital dust, cinematic lighting, 8k, dark background" for a security update.
+    Structure the 'steps' as if talking to a friend sitting next to you.
     
-    Return a single JSON object (MicroLesson). Output valid JSON only.
-    Structure:
+    Return JSON (MicroLesson).
     {
       "id": "string",
-      "updateId": "string",
-      "title": "string",
-      "duration": "string",
-      "whyItMatters": "string",
-      "whatChanged": "string",
+      "title": "string (Simple, Actionable)",
+      "duration": "2 min",
+      "whyItMatters": "string (Why this saves time/energy)",
+      "whatChanged": "string (One sentence summary)",
       "steps": ["string"],
-      "mentalModel": "string",
-      "practiceTask": "string",
+      "mentalModel": "string (Simple analogy)",
+      "practiceTask": "string (A fun, easy 2-minute task)",
+      "taskPrompt": "string (A ready-to-copy prompt the user can paste directly. Must be a real prompt, not instructions. Example: 'Summarize this article in 3 bullet points' or 'Generate 5 creative names for a coffee shop')",
       "visualConcept": "string"
     }
   `,
 
   TOOL_DISCOVERY: (userJson: string, currentDate: string) => `
-    Act as the "Real-Time Tool Discovery Engine" (similar to 'There's an AI for That').
+    Act as "Trend Scout". 
+    User: ${userJson} 
+    Date: ${currentDate}
     
-    User Context: ${userJson}
-    Current Snapshot: ${currentDate}
-    
-    Your goal is to identify the absolute latest and most impactful AI tools.
-    
-    SEARCH STRATEGY (Execute these searches via Google Search):
-    1. "New AI tools launched ${currentDate}"
-    2. "Trending AI Github repositories last 24 hours"
-    3. "Top trending tools on Vercel AI SDK / Product Hunt this week"
-    4. "Underrated AI tools for [User Role] ${currentDate}"
+    Goal: Find 5 "Hidden Gem" or "Trending" AI tools.
     
     CRITERIA:
-    - Focus on "breaking" tools or major updates released in the last 48 hours to 1 month.
-    - Include Full-Stack builders (Bolt.new, Lovable), Reasoning models (DeepSeek R1 apps), and niche productivity tools.
+    - SOURCE: Look for tools popping up on Twitter (X), Reddit (r/LocalLLaMA, r/OpenAI), and Product Hunt in the last 7 days.
+    - TYPE: "Underrated" but powerful. (e.g. specialized coding agents, new voice clones, video generators).
+    - EXCLUDE: The obvious ones (ChatGPT, Gemini) - we already have those.
+    - FOCUS: Web-based, immediate utility.
     
-    Return a JSON array of "ToolSuggestion" objects (**Generate 20 items**).
-    IMPORTANT: Wrap output in \`\`\`json code blocks.
-    
-    Structure:
-    [
-      {
-        "id": "string",
-        "name": "string",
-        "category": "string",
-        "collection": "Major" | "New" | "Underrated",
-        "description": "string",
-        "useCases": ["string"],
-        "bestFor": ["string"],
-        "matchScore": number,
-        "learningCurve": "Low" | "Medium" | "High",
-        "deltaAnalysis": "string",
-        "trending": boolean,
-        "url": "string"
-      }
-    ]
+    Return JSON array of ToolSuggestion. Add a "collection" field: "New" or "Underrated".
   `,
 
   TOOL_LESSON_GENERATION: (toolJson: string, userJson: string) => `
-    Act as the "Tool Tutor Agent".
-    Tool Context: ${toolJson}
-    User Context: ${userJson}
+    Act as "Tool Tutor".
+    Tool: ${toolJson}
+    User: ${userJson}
 
-    Generate a MicroLesson to help this user get started with this tool immediately.
+    Create a "Quick Start" MicroLesson.
+    Tone: "Look how cool & easy this is."
+    Focus: One specific "Magic Moment" the user can try in 2 minutes.
     
-    IMPORTANT: Provide a "visualConcept". This is a prompt used to generate a 3D abstract header image for the lesson.
-    
-    Return JSON (MicroLesson structure). Output valid JSON only.
-    Structure:
-    {
-      "id": "string",
-      "updateId": "string",
-      "title": "string",
-      "duration": "string",
-      "whyItMatters": "string",
-      "whatChanged": "string",
-      "steps": ["string"],
-      "mentalModel": "string",
-      "practiceTask": "string",
-      "visualConcept": "string"
-    }
+    Return JSON (MicroLesson).
   `,
 
   LIFE_HACK: (userJson: string, updatesJson: string) => `
-    Act as the "Daily Integration Agent".
-    User: ${userJson}
-    Recent Updates/Tools: ${updatesJson}
-
-    Select the SINGLE most impactful update or tool from the list and create a "Daily Life Hack" for this specific user.
-    It should be a non-technical, lifestyle-oriented tip.
-    
-    Return valid JSON (DailyLifeHack). Wrap in \`\`\`json blocks.
-    Structure:
-    {
-      "id": "string",
-      "title": "string",
-      "toolName": "string",
-      "context": "string",
-      "action": "string",
-      "impact": "string"
-    }
+    Act as "Productivity Coach".
+    Create one simple "Life Hack" using AI for this user today.
+    It should be surprising but easy.
+    Return JSON (DailyLifeHack).
   `,
 
-  MODEL_GUIDE: (modelName: string, currentDate: string) => `
-    Act as the "Master Guide Agent".
-    Model: ${modelName}
-    Date: ${currentDate}
+  MASTER_GUIDE: (toolJson: string, userJson: string) => `
+You are a friendly AI teacher. Explain this tool in simple terms anyone can understand.
 
-    Create a "Cheat Sheet" or Master Guide for this specific AI model.
-    Use Google Search to find the latest capabilities, hidden features, and best prompting strategies as of today.
+TOOL INFO: ${toolJson}
+USER: ${userJson}
 
-    Return valid JSON (ModelGuide). Wrap in \`\`\`json blocks.
-    Structure:
-    {
-      "id": "string",
-      "modelName": "string",
-      "tagline": "string",
-      "bestUseCases": ["string"],
-      "hiddenFeatures": ["string"],
-      "promptTemplates": ["string"],
-      "weaknesses": "string",
-      "updatedAt": "string",
-      "visualConcept": "string"
-    }
+Return ONLY valid JSON (no markdown, no extra text):
+{
+  "id": "lesson-1",
+  "title": "Your First Steps with [Tool Name]",
+  "duration": "3 min",
+  "whyItMatters": "A friendly one-sentence hook about why this matters",
+  "whyUseThisTool": "2-3 sentences explaining WHO should use this tool and WHAT problems it solves. Be specific.",
+  "whatChanged": "What the tool does in simple terms",
+  "steps": [
+    "Step 1: A simple, clear action anyone can follow",
+    "Step 2: The next logical step",
+    "Step 3: Something to try that shows value",
+    "Step 4: How to explore more"
+  ],
+  "mentalModel": "A simple analogy or concept to remember",
+  "practiceTask": "One easy task to try right now (takes < 2 minutes)",
+  "taskPrompt": "A ready-to-copy prompt the user can paste directly into the tool. Example: 'Write me a professional email declining a meeting politely' or 'Create a 30-day workout plan for beginners'. This should be specific and immediately usable."
+}
+
+RULES:
+- Write like you're explaining to a smart friend who's never used AI before
+- No jargon - if you must use a technical term, explain it in parentheses
+- Steps should be specific and actionable, not vague
+- Keep it encouraging and practical
+- The taskPrompt MUST be a real, copy-paste ready prompt (not instructions about what to do)
   `,
 
   CHAT_SYSTEM: (userJson: string) => `
-    Act as "Delta", a personalized AI Intelligence Consultant.
-    
+    You are Delta, a helpful, encouraging AI coach.
     User Profile: ${userJson}
     
-    Mission:
-    - You are not just a chatbot; you are a proactive guide to the AI ecosystem.
-    - Your goal is to help this specific user (based on their role and goals) navigate recent AI updates and tools.
-    - When asked about tools, recommend ones that fit their 'UserRole' and 'UserGoal'.
-    - When asked about news, summarize it in a way that highlights the impact on their specific job.
-    - Adjust your technical depth based on their 'AIFamiliarity' (Beginner vs Advanced).
-    - Be concise, professional, and forward-looking.
-    
-    Style:
-    - Cyber-futuristic but clean and accessible.
-    - Use formatting (bullet points) for readability.
+    Your goal is to make AI feel safe and accessible.
+    - Never use complex jargon without explaining it.
+    - If the user feels overwhelmed, reassure them.
+    - Always suggest the *simplest* tool for the job.
+    - Keep answers short and actionable.
+  `,
+
+  PATH_GENERATION: (category: string) => `
+     Act as "Curriculum Designer for Beginners".
+     Category: ${category}
+     
+     Generate a learning path of 3 modules.
+     
+     RULES:
+     - Titles must be non-technical and inviting. (e.g. "Writing emails faster" instead of "LLM Text Generation").
+     - Progression: Easy -> Medium -> Cool.
+     - Avoid "Introduction to..." - make it specific.
+     
+     Return JSON Array of strings.
+     Example: ["Fixing your grammar", "Brainstorming ideas", "Writing in your voice"]
   `
 };
